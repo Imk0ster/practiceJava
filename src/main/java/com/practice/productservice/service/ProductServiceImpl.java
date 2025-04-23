@@ -3,6 +3,8 @@ package com.practice.productservice.service;
 import com.practice.productservice.product.Product;
 import com.practice.productservice.product.ProductEntity;
 import com.practice.productservice.repository.ProductRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,143 +14,155 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class ProductServiceImpl implements ProductService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProductServiceImpl.class);
 
     private final ProductRepository productRepository;
 
     @Autowired
     public ProductServiceImpl(ProductRepository productRepository) {
         this.productRepository = productRepository;
+        logger.info("ProductServiceImpl initialized");
     }
 
     @Override
-    public void create(Product product) {
-        LocalDateTime now = LocalDateTime.now();
-        ProductEntity entity = new ProductEntity(
-                0, // id будет сгенерирован базой
-                product.name(),
-                product.description(),
-                product.price(),
-                product.category(),
-                product.stockQuantity(),
-                product.imageUrl(),
-                now,
-                now,
-                product.isActive()
-        );
-        productRepository.save(entity);
+    public Product create(Product product) {
+        logger.debug("Creating product with input: {}", product);
+        try {
+            logger.debug("Mapping Product to ProductEntity");
+            LocalDateTime now = LocalDateTime.now();
+            ProductEntity entity = new ProductEntity(
+                    0, // id будет сгенерирован базой
+                    product.name(),
+                    product.description(),
+                    product.price(),
+                    product.category(),
+                    product.stockQuantity(),
+                    product.imageUrl(),
+                    now,
+                    now,
+                    product.isActive()
+            );
+            logger.debug("Saving ProductEntity to repository");
+            productRepository.save(entity);
+            logger.info("Product created successfully with id: {}", entity.getId());
+            return toProduct(entity);
+        } catch (Exception e) {
+            logger.error("Failed to create product: {}. Error: {}", product, e.getMessage(), e);
+            throw e;
+        }
+
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<Product> readAll() {
-        return productRepository.findAll().stream()
-                .map(this::toProduct)
-                .collect(Collectors.toList());
+        logger.debug("Reading all products");
+        try {
+            logger.debug("Fetching all ProductEntities from repository");
+            List<Product> products = productRepository.findAll().stream()
+                    .map(this::toProduct)
+                    .collect(Collectors.toList());
+            logger.info("Retrieved {} products", products.size());
+            return products;
+        } catch (Exception e) {
+            logger.error("Failed to read all products. Error: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Product read(int id) {
-        return productRepository.findById(id)
-                .map(this::toProduct)
-                .orElse(null);
+        logger.debug("Reading product with id: {}", id);
+        try {
+            logger.debug("Fetching ProductEntity with id: {} from repository", id);
+            Product product = productRepository.findById(id)
+                    .map(this::toProduct)
+                    .orElse(null);
+            if (product != null) {
+                logger.info("Product found with id: {}", id);
+            } else {
+                logger.warn("Product not found with id: {}", id);
+            }
+            return product;
+        } catch (Exception e) {
+            logger.error("Failed to read product with id: {}. Error: {}", id, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @Override
-    public boolean update(Product product, int id) {
-        return productRepository.findById(id)
-                .map(existingEntity -> {
-                    ProductEntity updatedEntity = new ProductEntity(
-                            id,
-                            product.name() != null ? product.name() : existingEntity.getName(),
-                            product.description() != null ? product.description() : existingEntity.getDescription(),
-                            product.price() != null ? product.price() : existingEntity.getPrice(),
-                            product.category() != null ? product.category() : existingEntity.getCategory(),
-                            product.stockQuantity() != null ? product.stockQuantity() : existingEntity.getStockQuantity(),
-                            product.imageUrl() != null ? product.imageUrl() : existingEntity.getImageUrl(),
-                            existingEntity.getCreatedAt(),
-                            LocalDateTime.now(),
-                            product.isActive() != null ? product.isActive() : existingEntity.isActive()
-                    );
-                    productRepository.save(updatedEntity);
-                    return true;
-                })
-                .orElse(false);
-    }
+    public Product update(Product product, int id) {
+        logger.debug("Updating product with id: {} with input: {}", id, product);
+        try {
+            logger.debug("Fetching ProductEntity with id: {} for update", id);
+            return productRepository.findById(id)
+                    .map(existingEntity -> {
+                        logger.debug("Mapping Product to ProductEntity for update");
+                        ProductEntity updatedEntity = new ProductEntity(
+                                id,
+                                product.name() != null ? product.name() : existingEntity.getName(),
+                                product.description() != null ? product.description() : existingEntity.getDescription(),
+                                product.price() != null ? product.price() : existingEntity.getPrice(),
+                                product.category() != null ? product.category() : existingEntity.getCategory(),
+                                product.stockQuantity() != null ? product.stockQuantity() : existingEntity.getStockQuantity(),
+                                product.imageUrl() != null ? product.imageUrl() : existingEntity.getImageUrl(),
+                                existingEntity.getCreatedAt(),
+                                LocalDateTime.now(),
+                                product.isActive() != null ? product.isActive() : existingEntity.isActive()
+                        );
+                        logger.debug("Saving updated ProductEntity to repository");
+                        ProductEntity savedEntity = productRepository.save(updatedEntity);
+                        logger.info("Product updated successfully with id: {}", id);
 
-//    public boolean update(Product product, int id) {
-//        return productRepository.findById(id)
-//                .map(entity -> {
-//                    if (product.name() != null) {
-//                        entity.setName(product.name());
-//                    }
-//                    if (product.description() != null) {
-//                        entity.setDescription(product.description());
-//                    }
-//                    if (product.price() != null) {
-//                        entity.setPrice(product.price());
-//                    }
-//                    if (product.category() != null) {
-//                        entity.setCategory(product.category());
-//                    }
-//                    if (product.stockQuantity() != null) {
-//                        entity.setStockQuantity(product.stockQuantity());
-//                    }
-//                    if (product.imageUrl() != null) {
-//                        entity.setImageUrl(product.imageUrl());
-//                    }
-//                    if (product.createdAt() != null) {
-//                        entity.setCreatedAt(product.createdAt());
-//                    }
-//                    if (product.updatedAt() != null) {
-//                        entity.setUpdatedAt(product.updatedAt());
-//                    } else {
-//                        entity.setUpdatedAt(LocalDateTime.now());
-//                    }
-//                    if (product.isActive() != null) {
-//                        entity.setActive(product.isActive());
-//                    }
-//                    productRepository.save(entity);
-//                    return true;
-//                })
-//                .orElse(false);
-//    }
-//        if (productRepository.existsById(id)) {
-//            ProductEntity entity = new ProductEntity(
-//                    id,
-//                    product.name(),
-//                    product.description(),
-//                    product.price(),
-//                    product.category(),
-//                    product.stockQuantity(),
-//                    product.imageUrl(),
-//                    product.createdAt(),
-//                    LocalDateTime.now(),
-//                    product.isActive()
-//            );
-//            productRepository.save(entity);
-//            return true;
-//        }
-//        return false;
+                        return new Product(
+                                savedEntity.getId(),
+                                savedEntity.getName(),
+                                savedEntity.getDescription(),
+                                savedEntity.getPrice(),
+                                savedEntity.getCategory(),
+                                savedEntity.getStockQuantity(),
+                                savedEntity.getImageUrl(),
+                                savedEntity.getCreatedAt(),
+                                savedEntity.getUpdatedAt(),
+                                savedEntity.isActive()
+                        );
+                    })
+                    .orElseGet(() -> {
+                        logger.warn("Product not found for update with id: {}", id);
+                        return null;
+                    });
+        } catch (Exception e) {
+            logger.error("Failed to update product with id: {}. Error: {}", id, e.getMessage(), e);
+            throw e;
+        }
+    }
 
     @Override
     public boolean delete(int id) {
-        if (productRepository.existsById(id)) {
-            productRepository.deleteById(id);
-            return true;
+        logger.debug("Deleting product with id: {}", id);
+        try {
+            logger.debug("Checking if product exists with id: {}", id);
+            if (productRepository.existsById(id)) {
+                logger.debug("Deleting ProductEntity with id: {} from repository", id);
+                productRepository.deleteById(id);
+                logger.info("Product deleted successfully with id: {}", id);
+                return true;
+            }
+            logger.warn("Product not found for deletion with id: {}", id);
+            return false;
+        } catch (Exception e) {
+            logger.error("Failed to delete product with id: {}. Error: {}", id, e.getMessage(), e);
+            throw e;
         }
-        return false;
-    }
-
-    @Override
-    @Transactional
-    public void delete() {
-        productRepository.deleteAll();
-        productRepository.flush();
-        productRepository.resetSequence();
     }
 
     private Product toProduct(ProductEntity entity) {
-        return new Product(
+        logger.debug("Mapping ProductEntity to Product for id: {}", entity.getId());
+        Product product = new Product(
                 entity.getId(),
                 entity.getName(),
                 entity.getDescription(),
@@ -160,5 +174,7 @@ public class ProductServiceImpl implements ProductService {
                 entity.getUpdatedAt(),
                 entity.isActive()
         );
+        logger.debug("Mapped ProductEntity to Product: {}", product);
+        return product;
     }
 }

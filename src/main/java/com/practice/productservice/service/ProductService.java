@@ -6,15 +6,14 @@ import java.util.List;
 
 public interface ProductService {
 
-    void create(Product product);
+    Product create(Product product);
 
     List<Product> readAll();
 
     Product read(int id);
 
-    boolean update(Product product, int id);
+    Product update(Product product, int id);
 
     boolean delete(int id);
 
-    void delete();
 }
