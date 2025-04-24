@@ -36,40 +36,4 @@ public record Product(
 
         @Schema(description = "Whether the product is active", example = "true")
         Boolean isActive
-) {
-//    public Product {
-//        if (name != null) {
-//            if (name.trim().isEmpty()) {
-//                throw new IllegalArgumentException("Name must not be empty");
-//            }
-//            if (name.length() > 255) {
-//                throw new IllegalArgumentException("Name must not exceed 255 characters");
-//            }
-//        }
-//        if (description != null && description.length() > 255) {
-//            throw new IllegalArgumentException("Description must not exceed 255 characters");
-//        }
-//        if (price != null) {
-//            if (price.compareTo(BigDecimal.ZERO) <= 0) {
-//                throw new IllegalArgumentException("Price must be positive");
-//            }
-//            if (price.scale() > 2 || price.precision() > 10) {
-//                throw new IllegalArgumentException("Price must have at most 8 integer digits and 2 decimal places");
-//            }
-//        }
-//        if (category != null) {
-//            if (category.trim().isEmpty()) {
-//                throw new IllegalArgumentException("Category must not be empty");
-//            }
-//            if (category.length() > 100) {
-//                throw new IllegalArgumentException("Category must not exceed 100 characters");
-//            }
-//        }
-//        if (stockQuantity != null && stockQuantity < 0) {
-//            throw new IllegalArgumentException("Stock quantity must not be negative");
-//        }
-//        if (imageUrl != null && imageUrl.length() > 255) {
-//            throw new IllegalArgumentException("Image URL must not exceed 255 characters");
-//        }
-//    }
-}
+) {}
