@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +22,52 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
 
+    private void validateProduct(Product product, boolean isCreate) {
+        if (isCreate) {
+            if (product.name() == null || product.name().trim().isEmpty()) {
+                throw new IllegalArgumentException("Name must not be empty");
+            }
+            if (product.price() == null || product.price().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Price must be positive");
+            }
+            if (product.category() == null || product.category().trim().isEmpty()) {
+                throw new IllegalArgumentException("Category must not be empty");
+            }
+            if (product.isActive() == null) {
+                throw new IllegalArgumentException("Active status is required");
+            }
+        } else {
+            if (product.name() != null && product.name().trim().isEmpty()) {
+                throw new IllegalArgumentException("Name must not be empty");
+            }
+            if (product.price() != null && product.price().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Price must be positive");
+            }
+            if (product.category() != null && product.category().trim().isEmpty()) {
+                throw new IllegalArgumentException("Category must not be empty");
+            }
+        }
+
+        if (product.name() != null && product.name().length() > 255) {
+            throw new IllegalArgumentException("Name must not exceed 255 characters");
+        }
+        if (product.description() != null && product.description().length() > 255) {
+            throw new IllegalArgumentException("Description must not exceed 255 characters");
+        }
+        if (product.price() != null && (product.price().scale() > 2 || product.price().precision() > 10)) {
+            throw new IllegalArgumentException("Price must have at most 8 integer digits and 2 decimal places");
+        }
+        if (product.category() != null && product.category().length() > 100) {
+            throw new IllegalArgumentException("Category must not exceed 100 characters");
+        }
+        if (product.stockQuantity() != null && product.stockQuantity() < 0) {
+            throw new IllegalArgumentException("Stock quantity must not be negative");
+        }
+        if (product.imageUrl() != null && product.imageUrl().length() > 255) {
+            throw new IllegalArgumentException("Image URL must not exceed 255 characters");
+        }
+    }
+
     @Autowired
     public ProductServiceImpl(ProductRepository productRepository) {
         this.productRepository = productRepository;
@@ -32,6 +79,7 @@ public class ProductServiceImpl implements ProductService {
         logger.debug("Creating product with input: {}", product);
         try {
             logger.debug("Mapping Product to ProductEntity");
+            validateProduct(product, true);
             LocalDateTime now = LocalDateTime.now();
             ProductEntity entity = new ProductEntity(
                     0, // id будет сгенерирован базой
@@ -98,6 +146,7 @@ public class ProductServiceImpl implements ProductService {
     public Product update(Product product, int id) {
         logger.debug("Updating product with id: {} with input: {}", id, product);
         try {
+            validateProduct(product, false);
             logger.debug("Fetching ProductEntity with id: {} for update", id);
             return productRepository.findById(id)
                     .map(existingEntity -> {

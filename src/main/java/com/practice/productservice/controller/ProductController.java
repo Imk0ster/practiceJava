@@ -129,7 +129,7 @@ public class ProductController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a product", description = "Deletes a product by its ID")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Product deleted successfully"),
+            @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
             @ApiResponse(responseCode = "304", description = "Product not found")
     })
     public ResponseEntity<?> delete(@PathVariable(name = "id") @Parameter(description = "Product ID") int id) {
@@ -138,7 +138,7 @@ public class ProductController {
             logger.debug("Calling ProductService.delete with id: {}", id);
             final boolean deleted = productService.delete(id);
             if (deleted) {
-                logger.info("Product deleted successfully with id: {}, returning 200 OK", id);
+                logger.info("Product deleted successfully with id: {}, returning 204 OK", id);
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             } else {
                 logger.warn("Product not found for deletion with id: {}, returning 304 Not Modified", id);
